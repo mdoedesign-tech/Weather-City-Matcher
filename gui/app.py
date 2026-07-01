@@ -7,10 +7,13 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 # IMPORTS
 # =========================
 import streamlit as st
+import pandas as pd
+import pydeck as pdk
 from core.weather_api import search_city, get_weather
 from gui.emojis import get_sun_emoji, get_hair_emoji, get_temp_emoji, get_weather_desc_emoji
 from core.analysis import score_city
-from data.database import init_db, save_favorite, get_favorites
+from data.database import init_db, save_favorite, get_favorites, delete_favorite
+from core.map_utils import favorites_to_dataframe, get_map_center
 
 
 # =========================
@@ -153,6 +156,24 @@ if weather is not None and "error" not in weather:
 
     st.metric("City Match Score", f"{score}/100")
 
+    # =========================
+    # DELETE FAVORITE BUTTON
+    # =========================
+    fav = st.session_state.get("selected_favorite")
+
+    if st.session_state.source == "favorite" and fav:
+
+        if st.button("🗑️ Delete from favourites"):
+
+            delete_favorite(fav["city"], fav["country"])
+
+            st.success("Deleted 💜")
+
+            st.session_state.selected_favorite = None
+            st.session_state.weather = None
+
+            st.rerun()
+
 
 # =========================
 # SAVE FAVORITE (ONLY FROM SEARCH)
@@ -178,6 +199,8 @@ if st.session_state.weather is not None and st.session_state.source == "search":
 
 favorites = get_favorites()
 
+df_favorites = favorites_to_dataframe(favorites)
+
 st.sidebar.header("⭐ Favorites")
 
 for fav in favorites:
@@ -187,15 +210,58 @@ for fav in favorites:
     lon = fav[4]
 
     if st.sidebar.button(
-        f"💙 {city_name}, {country}",
+        f"💜 {city_name}, {country}",
         key=f"fav_{city_name}_{country}"
     ):
         
         st.session_state.weather = get_weather(lat, lon)
         st.session_state.source = "favorite"
 
+        st.session_state.selected_favorite = {
+        "city": city_name,
+        "country": country,
+        "lat": lat,
+        "lon": lon
+        }
+
         st.rerun()
            
+# =========================
+# MAP
+# =========================
 
+st.divider()
+st.subheader("⭐ Favorite Cities")
 
+if not df_favorites.empty:
+    st.dataframe(df_favorites.drop(columns=["ID"]))
+
+center_lat, center_lon = get_map_center(df_favorites)
+
+st.subheader("🗺️ Map of Favorites")
+
+st.pydeck_chart(
+    pdk.Deck(
         
+        initial_view_state=pdk.ViewState(
+            latitude=center_lat,
+            longitude=center_lon,
+            zoom=3
+        ),
+
+        layers=[
+            pdk.Layer(
+                "ScatterplotLayer",
+                data=df_favorites,
+                get_position='[Longitude, Latitude]',
+                get_radius=50000,
+                get_fill_color=[180, 0, 255, 220],
+                pickable=True
+            )
+        ],
+
+        tooltip={
+            "text": "{City}, {Country}"
+        }
+    )
+)

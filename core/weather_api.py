@@ -7,7 +7,7 @@ import requests
 API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
 def search_city(city):
-    url = "http://api.openweathermap.org/geo/1.0/direct"
+    url = "https://api.openweathermap.org/geo/1.0/direct"
 
     params = {
         "q": city,
