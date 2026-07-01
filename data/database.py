@@ -1,11 +1,20 @@
 import sqlite3
 
+
+# =========================
+# DATABASE CONFIG
+# =========================
+# Pfad zur SQLite-Datenbankdatei.
+# Wenn die Datei nicht existiert, wird sie automatisch erstellt.
+
 DB_PATH = "data/weather_app.db"
 
 
 # =========================
-# INIT DB
+# INITIALISIERUNG DER DATENBANK
 # =========================
+# Erstellt die Tabelle für Favoriten-Städte, falls sie noch nicht existiert.
+
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -25,8 +34,11 @@ def init_db():
 
 
 # =========================
-# SAVE FAVORITE
+# FAVORIT SPEICHERN
 # =========================
+# Speichert eine Stadt in der Datenbank als Favorit.
+# Wird verwendet, wenn der User auf "⭐ Save Favorite" klickt.
+
 def save_favorite(city, country, lat, lon):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -41,8 +53,11 @@ def save_favorite(city, country, lat, lon):
 
 
 # =========================
-# GET FAVORITES
+# FAVORITEN LADEN
 # =========================
+# Gibt alle gespeicherten Lieblingsstädte zurück.
+# Rückgabe: Liste von Tupeln (id, city_name, country, lat, lon)
+
 def get_favorites():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -58,8 +73,11 @@ def get_favorites():
 
 
 # =========================
-# DELETE FAVORITE
+# FAVORIT LÖSCHEN
 # =========================
+# Entfernt eine Stadt aus den Favoriten anhand von Name + Land.
+# (Hinweis: könnte auch über ID robuster gemacht werden)
+
 def delete_favorite(city, country):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()

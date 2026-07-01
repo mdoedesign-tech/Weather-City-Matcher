@@ -1,3 +1,7 @@
+
+# =========================
+# SUN / WEATHER VIBE
+# =========================
 def get_sun_emoji(vibe):
         if vibe == 1:
             return "⛈️ Storm mode"
@@ -13,6 +17,9 @@ def get_sun_emoji(vibe):
             return "☀️ Full sunshine"
         
 
+# =========================
+# TEMPERATURE EMOJI MAPPING
+# =========================
 def get_temp_emoji(temp):
         if temp < -10:
             return "🧊 Freezing chaos"
@@ -27,7 +34,10 @@ def get_temp_emoji(temp):
         else:
             return "🔥 Extreme heat"
         
-        
+
+# =========================
+# HUMIDITY / HAIR LOGIC
+# =========================      
 def get_hair_emoji(h):
         if h < 20:
             return "💨 dry / frizzy-safe " 
@@ -41,9 +51,15 @@ def get_hair_emoji(h):
             return "🌧️💇‍♀️ full humidity disaster"  
         
 
+# =========================
+# WEATHER DESCRIPTION MAPPING
+# =========================
 def get_weather_desc_emoji(desc):
-            desc = desc.lower()
+            # Normalisieren, damit Groß-/Kleinschreibung egal ist
+            desc = desc.lower() 
 
+
+            # Klassifikation nach Schlüsselwörtern
             if "thunder" in desc:
                 return "⛈️ Storm"
             elif "rain" in desc or "drizzle" in desc:

@@ -1,6 +1,13 @@
 import sys
 import os
 
+
+# =========================
+# PATH SETUP
+# =========================
+# Fügt das Hauptverzeichnis des Projekt zum Phython-Pfad hinzu,
+# damit Modul aus core/ data/ und gui/ importiert werden können
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # =========================
@@ -9,73 +16,91 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
+
+# API-Logik (Stadt-Suche und Wetterdaten)
 from core.weather_api import search_city, get_weather
+
+# UI-helper für Emojis und visuelle Darstellung
 from gui.emojis import get_sun_emoji, get_hair_emoji, get_temp_emoji, get_weather_desc_emoji
+
+# Bewertungslogik (wie gut eine Stadt zu den User-Reference passt)
 from core.analysis import score_city
+
+#Datenbankfunktionen (Favoriten speichern / Laden / Löschen)
 from data.database import init_db, save_favorite, get_favorites, delete_favorite
+
+# Mapping ß Datenaufbereitung für die Visualisierung
 from core.map_utils import favorites_to_dataframe, get_map_center
 
 
 # =========================
-# INIT DB
+# DATABASE INITIALISIERUNG
 # =========================
+# Stellt sicher, dass die Datenbank beim Start existiert
 init_db()
 
 
 # =========================
-# PAGE CONFIG
+# STREAMLIT PAGE CONFIG
 # =========================
 st.set_page_config(page_title="Weather App", layout="wide")
 st.title("City Match")
 
+
 # =========================
-# SESSION STATE (IMPORTANT FIX)
+# SESSION STATE 
 # =========================
+# Streamlit führt das Skript bei jeder Interaktion neu aus
+# session_state speichert Daten zwischen diesen Reloads.
 
 if "weather" not in st.session_state:
-    st.session_state.weather = None   # This is REQUIRED so weather survives button reruns
+    st.session_state.weather = None   # aktuell geladenes wetter
 
 if "source" not in st.session_state:
-    st.session_state.source = None   # "search" or "favorite"
+    st.session_state.source = None   # "search" oder "favorite"
+
+if "selected_favorite" not in st.session_state:
+    st.session_state.selected_favorite = None  # aktuell ausgewählter Favorit
 
 
 # =========================
-# SIDEBAR SETTINGS
+# SIDEBAR - USER REFERENCES
 # =========================
+# hier Legt der User fest, welche Wetterbedigungen angenehm sind
+
 with st.sidebar:
     st.header("Set your preferences!")
     
-    # wie viel licht
+    # Sonnentoleranz (wie "sonning" es sich gut anfühlt)
     sun_tolerance = st.slider ("Current weather-vibe:", 1, 6, 3)
-    
     st.markdown(f"## {get_sun_emoji(sun_tolerance)}")
 
     st.divider()
 
-    # wie kalt oder heiß
+    # Temperaturtoleranz (kalt bis heiß)
     temp_tolerance = st.slider ("How hot feels okay for you today?", -50, 50, 0)
-    
     st.markdown(f"## {get_temp_emoji(temp_tolerance)}")
 
     st.divider()
 
-    # wie viel fruchtigkeit
-    hair_tolerance = st.slider("How much humidity can your hairstyle handle today?", 0, 100, 50) 
-    
+    # Luftfreuchtigkeit / Haar-Styling-Toleranz
+    hair_tolerance = st.slider("How much humidity can your hairstyle handle today?", 0, 100, 50)     
     st.markdown(f"## {get_hair_emoji(hair_tolerance)}")
 
 
 # =========================
 # CITY SEARCH
 # =========================
+# User gibt eine Stadt ein, danach die API kann merere Treffer zurückgeben
+
 city = st.text_input("Enter City")
 
 results = []
 
-# Suchen ob es gibt mehrere Stadt mit die gelche Name oder keine Stadt gibt mit deiese Name
 if city:
     results = search_city(city)
 
+# Falls keine Stadt gefunden wurde
 if city and not results:
     st.warning("No cities found 😢")
 
@@ -85,6 +110,7 @@ if city and not results:
 # =========================
 if results:
 
+    # Dropdown-Optionen für mögliche Städte
     options = [
         f"{c['name']} ({c['country']})"
         for c in results
@@ -92,7 +118,7 @@ if results:
 
     selected = st.selectbox ("Select location", options)
 
-    #ausgewählte option
+    # ausgewählte Stadt bestimmen
     index = options.index(selected)
     chosen = results[index]
 
@@ -105,13 +131,13 @@ if results:
     # =========================
     if st.button("Check it!"):
 
-        
+        # Wetterdaten laden und im Session State speichern
         st.session_state.weather = get_weather(lat, lon) # store weather in session state
         st.session_state.source = "search"
 
         weather = st.session_state.weather
 
-
+        # Fehlerbehnadlung der API
         if "error" in weather:
             st.error(weather["error"])
 
@@ -143,8 +169,9 @@ if weather is not None and "error" not in weather:
 
 
     # =========================
-    # SCORE
+    # MATCH SCORE
     # =========================
+    # Berechnet, wie gut die Stadt zu den Use-Präferenzen passt
     score = score_city(
         sun_tolerance,
         temp_tolerance,
@@ -155,6 +182,7 @@ if weather is not None and "error" not in weather:
     )
 
     st.metric("City Match Score", f"{score}/100")
+
 
     # =========================
     # DELETE FAVORITE BUTTON
@@ -176,8 +204,9 @@ if weather is not None and "error" not in weather:
 
 
 # =========================
-# SAVE FAVORITE (ONLY FROM SEARCH)
+# SAVE FAVORITE
 # =========================
+# Nur möglich, wenn Daten aus einer Suche stammen
 
 if st.session_state.weather is not None and st.session_state.source == "search":
 
@@ -227,7 +256,7 @@ for fav in favorites:
         st.rerun()
            
 # =========================
-# MAP
+# TABELLE + KARTE
 # =========================
 
 st.divider()
@@ -240,6 +269,8 @@ center_lat, center_lon = get_map_center(df_favorites)
 
 st.subheader("🗺️ Map of Favorites")
 
+
+# Visualisierung der Favoriten auf einer Karte
 st.pydeck_chart(
     pdk.Deck(
         
