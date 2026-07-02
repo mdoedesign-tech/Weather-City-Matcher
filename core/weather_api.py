@@ -32,9 +32,9 @@ def search_city(city):
 
 
     # API liefert direkt JSON (Liste von möglichen Städten)
-    return response.json()
+    #return response.json()
 
- # Debug (később törölhető)
+    # Debug (később törölhető)
     print("Status:", response.status_code)
     print("Response:", response.text)
 
