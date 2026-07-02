@@ -34,6 +34,19 @@ def search_city(city):
     # API liefert direkt JSON (Liste von möglichen Städten)
     return response.json()
 
+ # Debug (később törölhető)
+    print("Status:", response.status_code)
+    print("Response:", response.text)
+
+    if response.status_code != 200:
+        return []
+
+    data = response.json()
+
+    if not isinstance(data, list):
+        return []
+
+    return data
 
 # =========================
 # WEATHER FETCH
